@@ -22,10 +22,9 @@
 
 package org.jboss.as.ejb3.subsystem.deployment;
 
-import java.util.Map;
-
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.ListAttributeDefinition;
+import org.jboss.as.controller.ObjectListAttributeDefinition;
 import org.jboss.as.controller.ObjectTypeAttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -43,6 +42,9 @@ import org.jboss.as.ejb3.component.stateful.StatefulSessionComponent;
 import org.jboss.as.ejb3.subsystem.EJB3Extension;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Base class for {@link org.jboss.as.controller.ResourceDefinition}s describing runtime {@link EJBComponent}s.
@@ -80,7 +82,17 @@ public abstract class AbstractEJBComponentResourceDefinition extends SimpleResou
             .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
             .build();
 
-    private static final AttributeDefinition METHODS = ObjectTypeAttributeDefinition.Builder.of("methods", EXECUTION_TIME, INVOCATIONS, WAIT_TIME)
+    private static final AttributeDefinition NAME = new SimpleAttributeDefinitionBuilder("name", ModelType.STRING)
+            .setAllowNull(false)
+            .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
+            .build();
+
+    private static final ObjectTypeAttributeDefinition METHOD = ObjectTypeAttributeDefinition.Builder.of("", NAME, EXECUTION_TIME, INVOCATIONS, WAIT_TIME)
+            .setAllowNull(false)
+            .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
+            .build();
+
+    private static final AttributeDefinition METHODS = ObjectListAttributeDefinition.Builder.of("methods", METHOD)
             .setAllowNull(false)
             .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
             .build();
@@ -204,13 +216,18 @@ public abstract class AbstractEJBComponentResourceDefinition extends SimpleResou
             @Override
             protected void executeReadMetricStep(final OperationContext context, final ModelNode operation, final EJBComponent component) throws OperationFailedException {
                 context.getResult().setEmptyObject();
-                for (final Map.Entry<String, InvocationMetrics.Values> entry : component.getInvocationMetrics().getMethods().entrySet()) {
-                    final InvocationMetrics.Values values = entry.getValue();
+                final Set<Map.Entry<String, InvocationMetrics.Values>> methods = component.getInvocationMetrics().getMethods().entrySet();
+                if (!methods.isEmpty()) {
                     final ModelNode result = new ModelNode();
-                    result.get("execution-time").set(values.getExecutionTime());
-                    result.get("invocations").set(values.getInvocations());
-                    result.get("wait-time").set(values.getWaitTime());
-                    context.getResult().get(entry.getKey()).set(result);
+                    for (final Map.Entry<String, InvocationMetrics.Values> entry :methods) {
+                        final InvocationMetrics.Values values = entry.getValue();
+                        final ModelNode method = result.add();
+                        method.get("name").set(entry.getKey());
+                        method.get("execution-time").set(values.getExecutionTime());
+                        method.get("invocations").set(values.getInvocations());
+                        method.get("wait-time").set(values.getWaitTime());
+                    }
+                    context.getResult().set(result);
                 }
             }
         });
