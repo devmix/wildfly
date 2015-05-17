@@ -63,6 +63,16 @@ public abstract class AbstractEJBComponentResourceDefinition extends SimpleResou
             .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
             .build();
 
+    private static final AttributeDefinition MIN_TIME = new SimpleAttributeDefinitionBuilder("min-execution-time", ModelType.LONG)
+            .setAllowNull(false)
+            .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
+            .build();
+
+    private static final AttributeDefinition MAX_TIME = new SimpleAttributeDefinitionBuilder("max-execution-time", ModelType.LONG)
+            .setAllowNull(false)
+            .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
+            .build();
+
     private static final AttributeDefinition INVOCATIONS = new SimpleAttributeDefinitionBuilder("invocations", ModelType.LONG)
             .setAllowNull(false)
             .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
@@ -87,7 +97,7 @@ public abstract class AbstractEJBComponentResourceDefinition extends SimpleResou
             .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
             .build();
 
-    private static final ObjectTypeAttributeDefinition METHOD = ObjectTypeAttributeDefinition.Builder.of("", NAME, EXECUTION_TIME, INVOCATIONS, WAIT_TIME)
+    private static final ObjectTypeAttributeDefinition METHOD = ObjectTypeAttributeDefinition.Builder.of("", NAME, EXECUTION_TIME, INVOCATIONS, WAIT_TIME, MIN_TIME, MAX_TIME)
             .setAllowNull(false)
             .setFlags(AttributeAccess.Flag.STORAGE_RUNTIME)
             .build();
@@ -224,6 +234,8 @@ public abstract class AbstractEJBComponentResourceDefinition extends SimpleResou
                         final ModelNode method = result.add();
                         method.get("name").set(entry.getKey());
                         method.get("execution-time").set(values.getExecutionTime());
+                        method.get("min-execution-time").set(values.getMinExecutionTime());
+                        method.get("max-execution-time").set(values.getMaxExecutionTime());
                         method.get("invocations").set(values.getInvocations());
                         method.get("wait-time").set(values.getWaitTime());
                     }

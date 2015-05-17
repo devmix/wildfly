@@ -39,12 +39,20 @@ public class InvocationMetrics {
     public static class Values {
         final long invocations;
         final long executionTime;
+        final long minExecutionTime;
+        final long maxExecutionTime;
         final long waitTime;
 
-        private Values(final long invocations, final long waitTime, final long executionTime) {
+        private Values(final long invocations, final long waitTime, final long executionTime, final long minExecutionTime, final long maxExecutionTime) {
             this.invocations = invocations;
             this.executionTime = executionTime;
             this.waitTime = waitTime;
+            this.minExecutionTime = minExecutionTime;
+            this.maxExecutionTime = maxExecutionTime;
+        }
+
+        private Values(final long invocations, final long waitTime, final long executionTime) {
+            this(invocations, waitTime, executionTime, 0, 0);
         }
 
         public long getExecutionTime() {
@@ -57,6 +65,14 @@ public class InvocationMetrics {
 
         public long getWaitTime() {
             return waitTime;
+        }
+
+        public long getMinExecutionTime() {
+            return minExecutionTime;
+        }
+
+        public long getMaxExecutionTime() {
+            return maxExecutionTime;
         }
     }
 
@@ -77,7 +93,11 @@ public class InvocationMetrics {
         final AtomicReference<Values> methodValues = ref(methods, method.getName());
         for (;;) {
             final Values oldv = methodValues.get();
-            final Values newv = new Values(oldv.invocations + 1, oldv.waitTime + invocationWaitTime, oldv.executionTime + invocationExecutionTime);
+            final Values newv = new Values(
+                    oldv.invocations + 1, oldv.waitTime + invocationWaitTime, oldv.executionTime + invocationExecutionTime,
+                    oldv.invocations == 0 ? invocationExecutionTime : Math.min(oldv.minExecutionTime, invocationExecutionTime),
+                    oldv.invocations == 0 ? invocationExecutionTime : Math.max(oldv.maxExecutionTime, invocationExecutionTime)
+            );
             if (methodValues.compareAndSet(oldv, newv))
                 break;
         }
